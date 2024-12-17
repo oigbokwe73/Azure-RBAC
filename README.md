@@ -1,66 +1,123 @@
-Here is a **PowerShell script** that queries Azure Support tickets using the Azure REST API and appends the results to a **CSV file**. This script ensures that each new query appends to the existing CSV instead of overwriting it.
+Here is an enhanced **PowerShell script** that queries Azure Support tickets from **multiple subscriptions** and appends the results to a single **CSV file**. It takes an array of subscription IDs, iterates through them, and consolidates the data.
 
 ---
 
-### Script: Query Azure Support Cases and Append to CSV
+### Script: Query Azure Support Cases Across Multiple Subscriptions and Append to CSV
 
 Replace the following placeholders:
-- `<YOUR_SUBSCRIPTION_ID>`: Your Azure subscription ID.
-- `<OUTPUT_FILE>`: Path to your CSV file, e.g., `C:\support_tickets.csv`.
+- **`<OUTPUT_FILE>`**: Path to your CSV file, e.g., `C:\support_tickets.csv`.
 
+#### Script:
 ```powershell
 # Step 1: Get Access Token using Azure CLI
 $AccessToken = az account get-access-token --query accessToken -o tsv
 
-# Step 2: Define API Endpoint and Subscription ID
-$SubscriptionId = "<YOUR_SUBSCRIPTION_ID>"
-$ApiVersion = "2020-04-01"
-$Uri = "https://management.azure.com/subscriptions/$SubscriptionId/providers/Microsoft.Support/supportTickets?api-version=$ApiVersion"
+# Step 2: Define an Array of Subscription IDs
+$Subscriptions = @(
+    "<SUBSCRIPTION_ID_1>",
+    "<SUBSCRIPTION_ID_2>",
+    "<SUBSCRIPTION_ID_3>"
+)
 
-# Step 3: Set Headers for Authorization
+# Step 3: Set API Version and CSV Output Path
+$ApiVersion = "2020-04-01"
+$OutputFile = "<OUTPUT_FILE>"
+
+# Step 4: Set Headers for Authorization
 $Headers = @{
     "Authorization" = "Bearer $AccessToken"
     "Content-Type"  = "application/json"
 }
 
-# Step 4: Invoke the REST API
-try {
-    $Response = Invoke-RestMethod -Uri $Uri -Headers $Headers -Method Get
-} catch {
-    Write-Error "Failed to retrieve support tickets. Error: $_"
-    exit
-}
+# Step 5: Loop Through Each Subscription and Query Support Tickets
+$AllSupportTickets = @()
 
-# Step 5: Extract Ticket Details
-$SupportTickets = $Response.value | ForEach-Object {
-    [PSCustomObject]@{
-        "TicketID"       = $_.name
-        "Status"         = $_.properties.status
-        "Title"          = $_.properties.title
-        "Severity"       = $_.properties.severity
-        "CreatedDate"    = $_.properties.createdDate
-        "ModifiedDate"   = $_.properties.modifiedDate
-        "ServiceName"    = $_.properties.serviceName
-        "ContactMethod"  = $_.properties.contactMethod
+foreach ($SubscriptionId in $Subscriptions) {
+    Write-Host "Querying support tickets for Subscription: $SubscriptionId..." -ForegroundColor Cyan
+
+    # Define API Endpoint
+    $Uri = "https://management.azure.com/subscriptions/$SubscriptionId/providers/Microsoft.Support/supportTickets?api-version=$ApiVersion"
+
+    try {
+        # Invoke REST API
+        $Response = Invoke-RestMethod -Uri $Uri -Headers $Headers -Method Get
+
+        # Extract and Format Ticket Details
+        $Tickets = $Response.value | ForEach-Object {
+            [PSCustomObject]@{
+                "SubscriptionID" = $SubscriptionId
+                "TicketID"       = $_.name
+                "Status"         = $_.properties.status
+                "Title"          = $_.properties.title
+                "Severity"       = $_.properties.severity
+                "CreatedDate"    = $_.properties.createdDate
+                "ModifiedDate"   = $_.properties.modifiedDate
+                "ServiceName"    = $_.properties.serviceName
+                "ContactMethod"  = $_.properties.contactMethod
+            }
+        }
+
+        # Add to the Consolidated List
+        $AllSupportTickets += $Tickets
+    }
+    catch {
+        Write-Error "Failed to retrieve support tickets for Subscription $SubscriptionId. Error: $_"
     }
 }
 
-# Step 6: Define CSV File Path
-$OutputFile = "<OUTPUT_FILE>"
-
-# Step 7: Check if CSV Exists and Append Data
-if (Test-Path $OutputFile) {
-    # Append to existing CSV
-    $SupportTickets | Export-Csv -Path $OutputFile -NoTypeInformation -Append
+# Step 6: Append or Create CSV File
+if ($AllSupportTickets) {
+    if (Test-Path $OutputFile) {
+        # Append to Existing CSV
+        $AllSupportTickets | Export-Csv -Path $OutputFile -NoTypeInformation -Append
+    } else {
+        # Create New CSV
+        $AllSupportTickets | Export-Csv -Path $OutputFile -NoTypeInformation
+    }
+    Write-Host "Support tickets appended to $OutputFile successfully!" -ForegroundColor Green
 } else {
-    # Create new CSV
-    $SupportTickets | Export-Csv -Path $OutputFile -NoTypeInformation
+    Write-Host "No support tickets found for the provided subscriptions." -ForegroundColor Yellow
 }
-
-Write-Host "Support tickets appended to $OutputFile successfully!" -ForegroundColor Green
 ```
 
 ---
+
+### How It Works:
+1. **Access Token**: Obtained using Azure CLI.
+2. **Subscription Array**: `$Subscriptions` contains all the subscription IDs you want to query.
+3. **API Call**: Loops through each subscription ID and queries the Azure Support tickets.
+4. **Data Formatting**: Extracts key properties like `TicketID`, `Status`, `Title`, and others.
+5. **CSV Handling**: Consolidates data into a single CSV file. If the file already exists, it appends data; otherwise, it creates a new file.
+
+---
+
+### Output CSV Example:
+
+| SubscriptionID     | TicketID | Status | Title                | Severity | CreatedDate          | ModifiedDate         | ServiceName      | ContactMethod |
+|---------------------|----------|--------|----------------------|----------|----------------------|----------------------|------------------|---------------|
+| SUBSCRIPTION_ID_1   | 12345    | Open   | VM Performance Issue | Moderate | 2024-06-10T10:45:00Z | 2024-06-11T08:15:00Z | Virtual Machines | Email         |
+| SUBSCRIPTION_ID_2   | 67890    | Closed | Storage Issue        | Critical | 2024-06-01T12:00:00Z | 2024-06-05T10:00:00Z | Storage Accounts | Phone         |
+
+---
+
+### Execution Steps:
+1. Save the script as `Query-MultiSubSupportTickets.ps1`.
+2. Replace the subscription IDs in `$Subscriptions` and set your output file path.
+3. Run the script in PowerShell:
+   ```powershell
+   .\Query-MultiSubSupportTickets.ps1
+   ```
+
+---
+
+### Prerequisites:
+1. **Azure CLI** installed and logged in:
+   ```bash
+   az login
+   ```
+2. PowerShell 5.1 or later.
+
+Let me know if you need further refinements or explanations! 🚀---
 
 ### How It Works:
 1. **Access Token**: The script gets a Bearer token using `az account get-access-token`.
