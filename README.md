@@ -1,3 +1,90 @@
+In **PowerShell**, you can use the `Invoke-RestMethod` cmdlet to replicate the functionality of `curl`. Here's how to query **Azure Support cases** using the Azure REST API in PowerShell:
+
+---
+
+### Script: Query Azure Support Cases Using `Invoke-RestMethod`
+
+Replace the placeholders:
+- `<YOUR_SUBSCRIPTION_ID>`: Your Azure subscription ID.
+- `<ACCESS_TOKEN>`: Azure access token (retrieved via Azure CLI).
+
+#### Full Script:
+```powershell
+# Step 1: Get Access Token using Azure CLI
+$AccessToken = az account get-access-token --query accessToken -o tsv
+
+# Step 2: Define API Endpoint and Subscription ID
+$SubscriptionId = "<YOUR_SUBSCRIPTION_ID>"
+$ApiVersion = "2020-04-01"
+$Uri = "https://management.azure.com/subscriptions/$SubscriptionId/providers/Microsoft.Support/supportTickets?api-version=$ApiVersion"
+
+# Step 3: Set Headers for Authorization
+$Headers = @{
+    "Authorization" = "Bearer $AccessToken"
+    "Content-Type"  = "application/json"
+}
+
+# Step 4: Invoke the REST API (equivalent to curl)
+$Response = Invoke-RestMethod -Uri $Uri -Headers $Headers -Method Get
+
+# Step 5: Display Results
+$Response.value | Format-Table -Property id, name, @{N='Status';E={$_.properties.status}}, `
+    @{N='Title';E={$_.properties.title}}, @{N='Severity';E={$_.properties.severity}}, `
+    @{N='CreatedDate';E={$_.properties.createdDate}}
+```
+
+---
+
+### Explanation:
+1. **Access Token**: Obtained using Azure CLI.
+   ```bash
+   az account get-access-token --query accessToken -o tsv
+   ```
+2. **REST API Endpoint**:
+   - Azure support tickets REST API endpoint:
+     ```
+     https://management.azure.com/subscriptions/<SUBSCRIPTION_ID>/providers/Microsoft.Support/supportTickets?api-version=2020-04-01
+     ```
+
+3. **Invoke-RestMethod**:  
+   - Performs the REST API `GET` request equivalent to `curl`.
+
+4. **Filter and Format**:  
+   - Use `Format-Table` to display ticket properties such as `name`, `status`, `title`, etc.
+
+---
+
+### Example Output:
+```
+id                  name       Status   Title                  Severity  CreatedDate
+--                  ----       ------   -----                  --------  -----------
+/.../12345          12345      Open     VM Performance Issue   Moderate  2024-06-10T10:45:00Z
+```
+
+---
+
+### Optional: Filter Results (e.g., Open Tickets Only)
+You can add filtering to only display "Open" tickets:
+```powershell
+$OpenTickets = $Response.value | Where-Object { $_.properties.status -eq "Open" }
+$OpenTickets | Format-Table -Property id, name, @{N='Status';E={$_.properties.status}}, `
+    @{N='Title';E={$_.properties.title}}, @{N='Severity';E={$_.properties.severity}}, `
+    @{N='CreatedDate';E={$_.properties.createdDate}}
+```
+
+---
+
+### Prerequisites:
+1. Ensure you have the **Azure CLI** installed and logged in:
+   ```bash
+   az login
+   ```
+
+2. Install the **`jq`** tool (optional for JSON parsing in the CLI but not required for PowerShell).
+
+---
+
+Let me know if you encounter any issues or need further refinements! 🚀
 # Azure-RBAC
 To query Azure Support cases using a **`curl`** command, you can utilize the **Azure Resource Manager REST API** for support tickets. Here's how:
 
