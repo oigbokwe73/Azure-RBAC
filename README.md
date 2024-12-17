@@ -1,3 +1,107 @@
+Here is a **PowerShell script** that queries Azure Support tickets using the Azure REST API and appends the results to a **CSV file**. This script ensures that each new query appends to the existing CSV instead of overwriting it.
+
+---
+
+### Script: Query Azure Support Cases and Append to CSV
+
+Replace the following placeholders:
+- `<YOUR_SUBSCRIPTION_ID>`: Your Azure subscription ID.
+- `<OUTPUT_FILE>`: Path to your CSV file, e.g., `C:\support_tickets.csv`.
+
+```powershell
+# Step 1: Get Access Token using Azure CLI
+$AccessToken = az account get-access-token --query accessToken -o tsv
+
+# Step 2: Define API Endpoint and Subscription ID
+$SubscriptionId = "<YOUR_SUBSCRIPTION_ID>"
+$ApiVersion = "2020-04-01"
+$Uri = "https://management.azure.com/subscriptions/$SubscriptionId/providers/Microsoft.Support/supportTickets?api-version=$ApiVersion"
+
+# Step 3: Set Headers for Authorization
+$Headers = @{
+    "Authorization" = "Bearer $AccessToken"
+    "Content-Type"  = "application/json"
+}
+
+# Step 4: Invoke the REST API
+try {
+    $Response = Invoke-RestMethod -Uri $Uri -Headers $Headers -Method Get
+} catch {
+    Write-Error "Failed to retrieve support tickets. Error: $_"
+    exit
+}
+
+# Step 5: Extract Ticket Details
+$SupportTickets = $Response.value | ForEach-Object {
+    [PSCustomObject]@{
+        "TicketID"       = $_.name
+        "Status"         = $_.properties.status
+        "Title"          = $_.properties.title
+        "Severity"       = $_.properties.severity
+        "CreatedDate"    = $_.properties.createdDate
+        "ModifiedDate"   = $_.properties.modifiedDate
+        "ServiceName"    = $_.properties.serviceName
+        "ContactMethod"  = $_.properties.contactMethod
+    }
+}
+
+# Step 6: Define CSV File Path
+$OutputFile = "<OUTPUT_FILE>"
+
+# Step 7: Check if CSV Exists and Append Data
+if (Test-Path $OutputFile) {
+    # Append to existing CSV
+    $SupportTickets | Export-Csv -Path $OutputFile -NoTypeInformation -Append
+} else {
+    # Create new CSV
+    $SupportTickets | Export-Csv -Path $OutputFile -NoTypeInformation
+}
+
+Write-Host "Support tickets appended to $OutputFile successfully!" -ForegroundColor Green
+```
+
+---
+
+### How It Works:
+1. **Access Token**: The script gets a Bearer token using `az account get-access-token`.
+2. **Azure REST API Call**: Queries support tickets using `Invoke-RestMethod`.
+3. **Data Transformation**: Extracts key properties from the JSON response into a `PSCustomObject`.
+4. **CSV Handling**:
+   - If the file exists, appends the new data.
+   - If the file does not exist, creates a new CSV file.
+5. **Output File**: Tickets are saved in the CSV file with the following columns:
+   - `TicketID`
+   - `Status`
+   - `Title`
+   - `Severity`
+   - `CreatedDate`
+   - `ModifiedDate`
+   - `ServiceName`
+   - `ContactMethod`
+
+---
+
+### Example CSV Output:
+
+| TicketID | Status | Title                | Severity | CreatedDate          | ModifiedDate         | ServiceName      | ContactMethod |
+|----------|--------|----------------------|----------|----------------------|----------------------|------------------|---------------|
+| 12345    | Open   | VM Performance Issue | Moderate | 2024-06-10T10:45:00Z | 2024-06-11T08:15:00Z | Virtual Machines | Email         |
+
+---
+
+### Execution Steps:
+1. Save the script as `Query-SupportTickets.ps1`.
+2. Run the script in PowerShell:
+   ```powershell
+   .\Query-SupportTickets.ps1
+   ```
+
+3. Verify the CSV file at the specified path.
+
+---
+
+Let me know if you need additional customizations or enhancements! 🚀
+
 In **PowerShell**, you can use the `Invoke-RestMethod` cmdlet to replicate the functionality of `curl`. Here's how to query **Azure Support cases** using the Azure REST API in PowerShell:
 
 ---
