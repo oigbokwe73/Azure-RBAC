@@ -1,4 +1,35 @@
 
+#### Script:
+```powershell
+
+# Define variables
+$subscriptionId = "<Your-Subscription-ID>" # Replace with your subscription ID
+$resourceGroupName = "MyResourceGroup" # Replace with your desired resource group name
+$location = "EastUS" # Replace with your desired location
+
+# Define tags
+$tags = @{
+    Environment = "Development"; # Example tag
+    Project = "MyProject";       # Example tag
+    SubscriptionId = $subscriptionId # Adding the subscription ID as a tag
+}
+
+# Connect to Azure
+Connect-AzAccount
+
+# Set the subscription context
+Set-AzContext -SubscriptionId $subscriptionId
+
+# Create the resource group with tags
+New-AzResourceGroup -Name $resourceGroupName -Location $location -Tag $tags
+
+Write-Host "Resource group '$resourceGroupName' created successfully with tags."
+
+```
+
+
+
+
 ### Script: Query Azure Support Cases Across Multiple Subscriptions and Append to CSV
 
 Replace the following placeholders:
