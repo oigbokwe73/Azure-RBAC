@@ -1,4 +1,32 @@
+Here's the **Azure CLI (az)** command to add a **role assignment** to a **group**:
 
+```bash
+az role assignment create \
+  --assignee "<group-object-id-or-name>" \
+  --role "<role-name-or-id>" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group-name>"
+```
+
+### 🔍 Example:
+```bash
+az role assignment create \
+  --assignee "my-group-name-or-object-id" \
+  --role "Contributor" \
+  --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/myResourceGroup"
+```
+
+---
+
+### 🔐 Notes:
+- The `--assignee` parameter can accept:
+  - Group name (only if it's unique)
+  - Group Object ID (recommended for accuracy)
+- You can also set scope at:
+  - Subscription level: `/subscriptions/<subscription-id>`
+  - Resource group level
+  - Specific resource level
+
+Let me know if you want to use **managed identity**, **user**, or **service principal** instead — I’ll adjust it for you!
 #### Script:
 ```powershell
 
