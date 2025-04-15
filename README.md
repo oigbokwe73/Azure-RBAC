@@ -1,3 +1,71 @@
+Here’s a clean and reusable example of how to define a **JSON array** of Azure Resource Groups with tags and then use **PowerShell** to loop through the array and create each Resource Group in Azure:
+
+---
+
+### ✅ **Step 1: Define the JSON Array (resourceGroups.json)**
+
+```json
+[
+  {
+    "name": "rg-app-prod",
+    "location": "eastus",
+    "tags": {
+      "Environment": "Production",
+      "Owner": "AppTeam",
+      "CostCenter": "1001"
+    }
+  },
+  {
+    "name": "rg-data-dev",
+    "location": "westus2",
+    "tags": {
+      "Environment": "Development",
+      "Owner": "DataTeam",
+      "CostCenter": "1002"
+    }
+  },
+  {
+    "name": "rg-network-shared",
+    "location": "centralus",
+    "tags": {
+      "Environment": "Shared",
+      "Owner": "NetOps",
+      "CostCenter": "1003"
+    }
+  }
+]
+```
+
+Save this file as `resourceGroups.json`.
+
+---
+
+### ✅ **Step 2: PowerShell Script to Create the Resource Groups**
+
+```powershell
+# Load JSON file
+$resourceGroups = Get-Content -Raw -Path "./resourceGroups.json" | ConvertFrom-Json
+
+# Loop through and create resource groups with tags
+foreach ($rg in $resourceGroups) {
+    Write-Host "Creating Resource Group: $($rg.name) in $($rg.location)..."
+
+    New-AzResourceGroup `
+        -Name $rg.name `
+        -Location $rg.location `
+        -Tag $rg.tags
+
+    Write-Host "Resource Group $($rg.name) created with tags."
+}
+```
+
+> ✅ **Pre-requisite**: You must be logged in via `Connect-AzAccount` and have `Az.Resources` module installed.
+
+---
+
+Would you also like the **Bicep**, **Terraform**, or **CLI (az)** version of this setup?
+
+
 Here's the **Azure CLI (az)** command to add a **role assignment** to a **group**:
 
 ```bash
